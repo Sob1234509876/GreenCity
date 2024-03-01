@@ -1,12 +1,14 @@
 package Main;
 
 import javax.swing.BorderFactory;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JWindow;
 
 import java.awt.Color;
 import java.awt.Font;
@@ -17,16 +19,28 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import java.time.LocalDateTime;
+import java.util.Random;
 
 public class Main {
 
+    public static Path gamePath = Paths.get("").toAbsolutePath();
+    public static Path assetPath = Paths.get(gamePath.toString(), "asset");
     public static volatile char pressedKey = '\0';
-    public static volatile int fontSize = 16;
+    public static volatile int temperature = 0;
+    public static volatile int weatherType = 0;
+    public static volatile int deltaT = 0;
+    public static volatile Random globalRandom = new Random();
+    public static volatile AudioPlay test = new AudioPlay(
+            Paths.get(assetPath.toString(), "classicsiren.wav").toString());
 
-    public static JFrame rootFrame = new JFrame("Green City Terminal 0.2.2");
+    public static JWindow overHeatWindow = new JWindow();
+
+    public static JFrame rootFrame = new JFrame("SMART CITY Terminal 0.2.3");
     public static JPanel cmdPanel = new JPanel(null);
 
-    public static JTextArea outArea = new JTextArea("SMART CITY 0.2.2\n");
+    public static JTextArea outArea = new JTextArea(
+            "SMART CITY Terminal [v0.2.2]\n" +
+                    "© Gigaware Co.,Ltd. all rights reserved.");
     public static JTextField point = new JTextField(">>>>>>");
     public static JTextField cmdArea = new JTextField("size\\20");
     public static JTextField cmdTitle = new JTextField("Command terminal");
@@ -42,15 +56,23 @@ public class Main {
             LocalDateTime.now().getMinute(),
             LocalDateTime.now().getSecond()));
 
-    public static void main(String[] args) throws Exception {
+    public static JTextField weaTitle = new JTextField("Weather");
+    public static JPanel weaPanel = new JPanel(null);
+    public static JLabel weatherIcon = new JLabel();
+    public static JTextField weather = new JTextField();
+    public static Icon sunny = new ImageIcon(Paths.get(assetPath.toString(), "sun.png").toString());
+    public static Icon cloudy = new ImageIcon(Paths.get(assetPath.toString(), "cloud.png").toString());
+    public static Icon rainy = new ImageIcon(Paths.get(assetPath.toString(), "rain.png").toString());
+    public static Icon snowy = new ImageIcon(Paths.get(assetPath.toString(), "snow.png").toString());
 
-        Path gamePath = Paths.get("").toAbsolutePath();
-        Path assetPath = Paths.get(gamePath.toString(), "asset");
+    public static JTextField overHeat = new JTextField("////////!///////Over Heat///////!////////");
+
+    public static void main(String[] args) throws Exception {
 
         ImageIcon icon = new ImageIcon(Paths.get(assetPath.toString(), "icon.png").toString());
         ImageIcon joke = new ImageIcon(Paths.get(assetPath.toString(), "Joke.gif").toString());
 
-        // rootFrame init.
+        // init.
 
         rootFrame.setVisible(true);
         rootFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -71,6 +93,14 @@ public class Main {
         rootFrame.add(cloPanel);
         cloPanel.add(bigClock);
 
+        rootFrame.add(weaTitle);
+        rootFrame.add(weaPanel);
+        weaPanel.add(weather);
+        weaPanel.add(weatherIcon);
+
+        overHeatWindow.setBounds(500, 0, 2000, 95);
+        overHeatWindow.add(overHeat);
+
         // cmdPanel init.
 
         cmdPanel.setOpaque(true);
@@ -82,11 +112,10 @@ public class Main {
         cmdPanel.add(point);
         cmdPanel.add(cmdArea);
 
-        JFrame jokeFrame = new JFrame("Downloading data ...");
-        jokeFrame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        jokeFrame.setSize(515, 330);
+        JWindow jokeFrame = new JWindow();
+        jokeFrame.setSize(490, 260);
         jokeFrame.setLayout(null);
-        jokeFrame.setResizable(false);
+        jokeFrame.setLocationRelativeTo(null);
 
         // Init
 
@@ -242,6 +271,92 @@ public class Main {
 
         int siz = 24;
 
+        Thread passiveThread = new Thread(new Runnable() {
+            public void run() {
+                while (true) {
+                    log("passive thread run");
+                    temperature += deltaT > 0 ? 1 : -1;
+                    try {
+                        Thread.sleep((3000 + globalRandom.nextInt(1000)) / (deltaT * deltaT + 1)
+                                * (Math.abs(temperature) + 1));
+                    } catch (Exception e) {
+                    }
+
+                    if ((temperature > 100) || (temperature < -273))
+                        System.exit(0);
+                }
+            }
+        }, "passive thread");
+
+        passiveThread.start();
+
+        /////////////////////////////////////////// weather/////////////////////////////////////
+
+        Thread weatherThread = new Thread(new Runnable() {
+            public void run() {
+                while (true) {
+                    try {
+
+                        switch (weatherType) {
+                            case 0:
+                                weatherIcon.setIcon(sunny);
+                                weather.setText(String.format("%s %d℃", "sunny", temperature));
+                                break;
+
+                            case 1:
+                                weatherIcon.setIcon(cloudy);
+                                weather.setText(String.format("%s %d℃", "cloudy", temperature));
+                                Thread.sleep(3000 + globalRandom.nextInt(2000));
+
+                            case 2:
+                                if (temperature > 0) {
+                                    weatherIcon.setIcon(rainy);
+                                    weather.setText(String.format("%s %d℃", "rainy", temperature));
+                                } else {
+                                    weatherIcon.setIcon(snowy);
+                                    weather.setText(String.format("%s %d℃", "snowy", temperature));
+                                }
+                                Thread.sleep(5000 + globalRandom.nextInt(5000));
+                                break;
+
+                            default:
+                                weatherIcon.setIcon(sunny);
+                                weather.setText(String.format("%s %d℃", "sunny", temperature));
+                                break;
+                        }
+
+                        Thread.sleep(1000 + globalRandom.nextInt(500));
+                        weatherType = globalRandom.nextInt(25);
+                    } catch (Exception e) {
+                    }
+                }
+            }
+        }, "weather thread");
+
+        weaTitle.setEditable(false);
+        weaTitle.setBounds(0, 15 * siz + 16, 450, siz);
+        weaTitle.setFont(new Font("宋体", Font.PLAIN, siz));
+        weaTitle.setBackground(new Color(192, 255, 255));
+        weaTitle.setForeground(Color.BLACK);
+
+        weaPanel.setBounds(0, 16 * siz + 16, 450, 933 - 16 * siz);
+        weaPanel.setBackground(Color.BLACK);
+        weaPanel.setForeground(new Color(192, 255, 255));
+        weaPanel.setBorder(BorderFactory.createMatteBorder(0, 1, 1, 1, new Color(192, 255, 255)));
+
+        weatherIcon.setBounds(161, 156 - siz / 2, 128, 128);
+        weatherIcon.setIcon(sunny);
+
+        weather.setText(String.format("sunny %d℃", temperature));
+        weather.setEditable(false);
+        weather.setBounds(161, 284 - siz / 2, 128, siz);
+        weather.setFont(new Font("coure", Font.PLAIN, siz));
+        weather.setBackground(Color.BLACK);
+        weather.setForeground(new Color(192, 255, 255));
+        weather.setBorder(null);
+
+        weatherThread.start();
+
         /////////////////////////////////////////// clock///////////////////////////////////////
 
         Thread clockThread = new Thread(new Runnable() {
@@ -321,7 +436,7 @@ public class Main {
 
         // outArea init.
         outArea.setEditable(false);
-        outArea.setBounds(50, 50, 1000, siz);
+        outArea.setBounds(50, 50, 1000, 500 - siz);
         outArea.setFont(new Font("宋体", Font.PLAIN, siz));
         outArea.setForeground(new Color(192, 255, 255));
         outArea.setBackground(Color.BLACK);
@@ -343,7 +458,9 @@ public class Main {
         cmdArea.addKeyListener(new KeyListener() {
             public void keyPressed(KeyEvent k) {
                 if (k.getKeyChar() == '\n') {
-                    pressedKey = k.getKeyChar();
+                    outArea.setText(command(cmdArea.getText()) + '\n');
+                    pressedKey = '\0';
+                    cmdArea.setText(null);
                 }
             }
 
@@ -354,19 +471,52 @@ public class Main {
             }
         });
 
-        Thread threadCMD = new Thread(new Runnable() {
+        ////////////////////////////////////////// over////////////////////////////////////
+
+        overHeat.setEditable(false);
+        overHeat.setBounds(0, 453, 95 * overHeat.getText().length(), 95);
+        overHeat.setFont(new Font("宋体", Font.PLAIN, 95));
+        overHeat.setBackground(null);
+        overHeat.setBorder(null);
+        overHeat.setVisible(true);
+
+        overHeatWindow.setVisible(true);
+        overHeatWindow.setAlwaysOnTop(true);
+
+        Thread overHeatThread = new Thread(new Runnable() {
             public void run() {
+                test.start();
+                test.pause();
                 while (true) {
-                    if (pressedKey == '\n') {
-                        outArea.setText(command(cmdArea.getText()) + '\n');
-                        pressedKey = '\0';
-                        cmdArea.setText(null);
+                    if (temperature >= 40) {
+                        overHeat.setForeground(Color.RED);
+                        overHeat.setText("////////!///////Over Heat///////!////////");
+                        overHeatWindow.setVisible(true);
+                        if (!(test.isPlay)) {
+                            test.recommence();
+                        }
+                    } else if (temperature <= -20) {
+                        overHeat.setForeground(Color.BLUE);
+                        overHeat.setText("///////!///////Over Cooled///////!///////");
+                        overHeatWindow.setVisible(true);
+                        if (!(test.isPlay)) {
+                            test.recommence();
+                        }
+                    } else {
+                        overHeatWindow.setVisible(false);
+                        if (test.isPlay) {
+                            test.pause();
+                        }
+                    }
+
+                    try {
+                        Thread.sleep(200);
+                    } catch (Exception e) {
                     }
                 }
             }
-        }, "CMD");
-
-        threadCMD.start();
+        }, "overheat thread");
+        overHeatThread.start();
 
         ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -402,6 +552,72 @@ public class Main {
                 // log(cmdTitle.getBackground());
 
                 return "";
+
+            } else if (com.equals("dataBs")) {
+
+                if (txt.equals("Jacob Zhang")) {
+                    return "It is the author of this terminal, duh.";
+                } else if (txt.equals("Shirax19")) {
+                    return "A character of Jacob Zhang`s GT:NH novel.";
+                } else if (txt.equals("Shirax21")) {
+                    return "Shirax19`s brother.";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else if (txt.equals("")) {
+                    return "";
+                } else {
+                    return String.format("Error 404 : \"%s\" not in data base", txt);
+                }
+
+            } else if (com.equals("heat")) {
+
+                deltaT = Integer.parseInt(txt);
+                return String.format("SMART CITY™ city heater %s: %d%c", (deltaT > 2) ? ("(Overclocked) ") : (""),
+                        50 * deltaT, '%');
+
+            } else if (com.equals("cool")) {
+
+                deltaT = -Integer.parseInt(txt);
+                return String.format("SMART CITY™ city cooler %s: %d%c", (deltaT < -2) ? ("(Overclocked) ") : (""),
+                        -50 * deltaT, '%');
+
+            } else if (com.equals("cmd")) {
+
+                return "SMART CITY Terminal [v0.2.2]\n" +
+                        "© Gigaware Co.,Ltd. all rights reserved.";
+
             } else {
                 return String.format("Unknown command \"%s\"", com);
             }
