@@ -1,46 +1,72 @@
 package Main;
 
-import javax.swing.BorderFactory;
-import javax.swing.Icon;
-import javax.swing.ImageIcon;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.JWindow;
+import Main.threads.*;
+import javax.swing.*;
+import Main.swingTweak.JCalender;
 
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import java.time.LocalDateTime;
 import java.util.Random;
 
-public class Main {
+/*
+ * TODO : News(up) & 特效(down) & database
+ */
 
+public class Main {
     public static Path gamePath = Paths.get("").toAbsolutePath();
     public static Path assetPath = Paths.get(gamePath.toString(), "asset");
+    public static Path deathLogPath = Paths.get(gamePath.toString(), "deathLog");
+
+    public static final String __version__ = "0.2.4";
+    public static final int siz = 24;
+    public static final double INDUSTRY = 1;
+    public static final int SUNNY = 0;
+    public static final int CLOUDY = 1;
+    public static final int WET = 2;
+    public static final Icon sunny = new ImageIcon(Paths.get(assetPath.toString(), "sun.png").toString());
+    public static final Icon cloudy = new ImageIcon(Paths.get(assetPath.toString(), "cloud.png").toString());
+    public static final Icon rainy = new ImageIcon(Paths.get(assetPath.toString(), "rain.png").toString());
+    public static final Icon snowy = new ImageIcon(Paths.get(assetPath.toString(), "snow.png").toString());
+    private static final ImageIcon icon = new ImageIcon(Paths.get(assetPath.toString(), "icon.png").toString());
+    public static final ImageIcon joke = new ImageIcon(Paths.get(assetPath.toString(), "Joke.gif").toString());
+
+    // Constansts
+
     public static volatile char pressedKey = '\0';
-    public static volatile int temperature = 0;
     public static volatile int weatherType = 0;
+    public static volatile int temperature = 0;
     public static volatile int deltaT = 0;
+    public static volatile double pmA = 114;
+    public static volatile double deltaP = 0;
     public static volatile Random globalRandom = new Random();
-    public static volatile AudioPlay test = new AudioPlay(
-            Paths.get(assetPath.toString(), "classicsiren.wav").toString());
+    public static AudioPlay sirenAudio = new AudioPlay(
+            Paths.get(assetPath.toString(), "siren.wav").toString());
+    public static AudioPlay evacAudio = new AudioPlay(
+            Paths.get(assetPath.toString(), "evacuate.wav").toString());
+    public static AudioPlay explosionAudio = new AudioPlay(
+            Paths.get(assetPath.toString(), "explosion.wav").toString());
+    public static AudioPlay bgmAudio;
 
-    public static JWindow overHeatWindow = new JWindow();
+    // Thread-shared
 
-    public static JFrame rootFrame = new JFrame("SMART CITY Terminal 0.2.3");
+    public static JWindow overWindow = new JWindow();
+    public static JWindow jokeFrame = new JWindow();
+
+    public static JFrame rootFrame = new JFrame(String.format("SMART CITY Terminal %s", __version__));
     public static JPanel cmdPanel = new JPanel(null);
 
-    public static JTextArea outArea = new JTextArea(
-            "SMART CITY Terminal [v0.2.2]\n" +
-                    "© Gigaware Co.,Ltd. all rights reserved.");
+    public static JTextArea outArea = new JTextArea(String.format(
+            "SMART CITY Terminal [v%s]\n" +
+                    "© Gigaware Co.,Ltd. all rights reserved.",
+            __version__));
     public static JTextField point = new JTextField(">>>>>>");
     public static JTextField cmdArea = new JTextField("size\\20");
     public static JTextField cmdTitle = new JTextField("Command terminal");
@@ -60,278 +86,68 @@ public class Main {
     public static JPanel weaPanel = new JPanel(null);
     public static JLabel weatherIcon = new JLabel();
     public static JTextField weather = new JTextField();
-    public static Icon sunny = new ImageIcon(Paths.get(assetPath.toString(), "sun.png").toString());
-    public static Icon cloudy = new ImageIcon(Paths.get(assetPath.toString(), "cloud.png").toString());
-    public static Icon rainy = new ImageIcon(Paths.get(assetPath.toString(), "rain.png").toString());
-    public static Icon snowy = new ImageIcon(Paths.get(assetPath.toString(), "snow.png").toString());
 
-    public static JTextField overHeat = new JTextField("////////!///////Over Heat///////!////////");
+    public static JTextField over = new JTextField();
+
+    public static JTextField pmTitle = new JTextField("P.m. 2.5");
+    public static JPanel pmPanel = new JPanel(null);
+    public static JTextField pm = new JTextField("114");
+
+    public static JTextField idTitle = new JTextField("SMART CITY™ terminal id");
+    public static JPanel idPanel = new JPanel(null);
+    public static JTextArea id = new JTextArea(
+            String.format("Simulation create time :\n" +
+                    "%s\n" +
+                    "===================================\n" +
+                    "IP : 1145:1419:1916:9:ffff:cccc:\n" +
+                    "12ce:97da\n" +
+                    "L-L : 43°52\'43\" 23°11\'5\"\n" +
+                    "===================================\n" +
+                    "SMART CITY Terminal [v%s]\n" +
+                    "© Gigaware Co.,Ltd. all rights\n" +
+                    "reserved.\n" +
+                    "===================================\n" +
+                    "GIGAWARE OS [v0.1]\n" +
+                    "© Gigaware Co.,Ltd. all rights\n" +
+                    "reserved.\n" +
+                    "===================================\n" +
+                    "Command set : QGIGA(R)x64\n" +
+                    "APU : QGIGA(R) i64T1F @ 64 QPB\n" +
+                    "Screen : IBM QuantumLCD\n" +
+                    "Screen drive : IBM QuantumLCD SC\n" +
+                    "v 1.3.4\n" +
+                    "RAM : GIGAWARE(R) QuantumRAM\n" +
+                    "FTB web IP : 1145:1419:1916:9:fe1f:\n" +
+                    "c00c:12ce:97da\n" +
+                    "===================================\n" +
+                    "Simulation ID : 13", LocalDateTime.now().toString(), __version__));
+
+    // JComponents
 
     public static void main(String[] args) throws Exception {
 
-        ImageIcon icon = new ImageIcon(Paths.get(assetPath.toString(), "icon.png").toString());
-        ImageIcon joke = new ImageIcon(Paths.get(assetPath.toString(), "Joke.gif").toString());
-
-        // init.
-
-        rootFrame.setVisible(true);
-        rootFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        rootFrame.setIconImage(icon.getImage());
-        rootFrame.setSize(2000, 1000);
-        rootFrame.setLayout(null);
-        rootFrame.setResizable(false);
-        rootFrame.getContentPane().setBackground(Color.BLACK);
-
-        rootFrame.add(cmdPanel);
-        rootFrame.add(cmdTitle);
-
-        rootFrame.add(calTitle);
-        rootFrame.add(calPanel);
-        calPanel.add(calender);
-
-        rootFrame.add(cloTitle);
-        rootFrame.add(cloPanel);
-        cloPanel.add(bigClock);
-
-        rootFrame.add(weaTitle);
-        rootFrame.add(weaPanel);
-        weaPanel.add(weather);
-        weaPanel.add(weatherIcon);
-
-        overHeatWindow.setBounds(500, 0, 2000, 95);
-        overHeatWindow.add(overHeat);
-
-        // cmdPanel init.
-
-        cmdPanel.setOpaque(true);
-        cmdPanel.setBounds(450, 200, 1100, 600);
-        cmdPanel.setBorder(BorderFactory.createMatteBorder(0, 1, 1, 1, new Color(192, 255, 255)));
-        cmdPanel.setBackground(Color.BLACK);
-
-        cmdPanel.add(outArea);
-        cmdPanel.add(point);
-        cmdPanel.add(cmdArea);
-
-        JWindow jokeFrame = new JWindow();
-        jokeFrame.setSize(490, 260);
-        jokeFrame.setLayout(null);
-        jokeFrame.setLocationRelativeTo(null);
-
         // Init
 
-        log("智慧城市启动");
-        log("");
-        log("  __________________");
-        log(" /  ________________|");
-        log("|  |________________");
-        log(" \\________________  \\");
-        log(" _________________| |");
-        log("|___________________/");
-        log("");
-        log("     __       __");
-        log("    /  \\     /  \\");
-        log("   /    \\   /    \\");
-        log("  /  /\\  \\_/  /\\  \\");
-        log(" /  /  \\     /  \\  \\");
-        log("/__/    \\___/    \\__\\");
-        log("");
-        log("     ___________");
-        log("    /  _______  \\");
-        log("   /  /_______\\  \\");
-        log("  /  ___________  \\");
-        log(" /  /           \\  \\");
-        log("/__/             \\__\\");
-        log("");
-        log(" _________________");
-        log("|   ____________  \\");
-        log("|  |____________| |");
-        log("|   ____________  \\");
-        log("|  |            \\  \\");
-        log("|__|             \\__\\");
-        log("");
-        log(" ___________________");
-        log("|________    _______|");
-        log("         |  |");
-        log("         |  |");
-        log("         |  |");
-        log("         |__|");
-        log("");
-        log("");
-        log("");
-        log("");
-        log("");
-        log("");
-        log("");
-        log(" ____________________");
-        log("|   _________________|");
-        log("|  |");
-        log("|  |");
-        log("|  |_________________");
-        log("|____________________|");
-        log("");
-        log(" ___________________");
-        log("|________    _______|");
-        log("         |  |");
-        log("         |  |");
-        log("_________|  |_______");
-        log("|___________________|");
-        log("");
-        log(" ___________________");
-        log("|________    _______|");
-        log("         |  |");
-        log("         |  |");
-        log("         |  |");
-        log("         |__|");
-        log("");
-        log(" ________    ________");
-        log(" \\       \\  /       /");
-        log("  \\       \\/       /");
-        log("   \\              /");
-        log("    |            |");
-        log("    |____________|");
-        log("");
-        log("Reading URL.txt");
+        init();
 
-        JLabel joking = new JLabel(joke);
-        joking.setBounds(0, 0, 490, 260);
-
-        jokeFrame.add(joking);
-
-        jokeFrame.setVisible(true);
-
-        log("Thread URL : Requesting 114.5.1.4:1919 ... [1]");
-
-        // Thread.sleep(20000);
-
-        log("Thread URL : Timeout");
-
-        jokeFrame.setVisible(false);
-
-        log("Thread URL : Requesting 114.5.1.4:1919 ... [2]");
-        log("Thread URL : Receiving Data ...");
-
-        Thread thread1 = new Thread(new Runnable() {
-            public void run() {
-                log("Thread thread1 : HTML soup : getting HTML.head");
-                log("Thread thread1 : HTML soup : getting HTML.body.pollution.data");
-                log("Thread thread1 : HTML soup : getting HTML.body.pollution.icon");
-                log("Thread thread1 : HTML soup : getting HTML.body.pollution.102F6ABD");
-                log("Thread thread1 : HTML soup : getting HTML.body.pollution.23CDE7A0");
-                log("Thread thread1 : HTML soup : getting HTML.body.pollution.59730E24");
-                log("Thread thread1 : HTML soup : getting HTML.body.pollution.BD76DD25");
-                log("Thread thread1 : HTML soup : getting HTML.body.pollution.4A36C0AF");
-                log("Thread thread1 : HTML soup : getting HTML.body.pollution.$B02F6ABD");
-                log("Thread thread1 : HTML soup : getting HTML.body.pollution.$ACCDE7A0");
-                log("Thread thread1 : HTML soup : getting HTML.body.pollution.$BC730E24");
-                log("Thread thread1 : HTML soup : getting HTML.body.pollution.$BD70DD25");
-                log("Thread thread1 : HTML soup : getting HTML.body.pollution.$0036C0AF");
-            }
-        }, "thread1");
-        Thread thread2 = new Thread(new Runnable() {
-            public void run() {
-                log("Thread thread2 : HTML soup : getting HTML.head");
-                log("Thread thread2 : HTML soup : getting HTML.body.weather.data");
-                log("Thread thread2 : HTML soup : getting HTML.body.weather.icon");
-                log("Thread thread2 : HTML soup : getting HTML.body.weather.102F6ABD");
-                log("Thread thread2 : HTML soup : getting HTML.body.weather.23CDE7A0");
-                log("Thread thread2 : HTML soup : getting HTML.body.weather.59730E24");
-                log("Thread thread2 : HTML soup : getting HTML.body.weather.BD76DD25");
-                log("Thread thread2 : HTML soup : getting HTML.body.weather.4A36C0AF");
-                log("Thread thread2 : HTML soup : getting HTML.body.weather.$B02F6ABD");
-                log("Thread thread2 : HTML soup : getting HTML.body.weather.$ACCDE7A0");
-                log("Thread thread2 : HTML soup : getting HTML.body.weather.$BC730E24");
-                log("Thread thread2 : HTML soup : getting HTML.body.weather.$BD70DD25");
-                log("Thread thread2 : HTML soup : getting HTML.body.weather.$0036C0AF");
-            }
-        }, "thread2");
-        Thread thread3 = new Thread(new Runnable() {
-            public void run() {
-                log("Thread thread3 : HTML soup : getting HTML.head");
-                log("Thread thread3 : HTML soup : getting HTML.body.other.data");
-                log("Thread thread3 : HTML soup : getting HTML.body.other.icon");
-                log("Thread thread3 : HTML soup : getting HTML.body.other.102F6ABD");
-                log("Thread thread3 : HTML soup : getting HTML.body.other.23CDE7A0");
-                log("Thread thread3 : HTML soup : getting HTML.body.other.59730E24");
-                log("Thread thread3 : HTML soup : getting HTML.body.other.BD76DD25");
-                log("Thread thread3 : HTML soup : getting HTML.body.other.4A36C0AF");
-                log("Thread thread3 : HTML soup : getting HTML.body.other.$B02F6ABD");
-                log("Thread thread3 : HTML soup : getting HTML.body.other.$ACCDE7A0");
-                log("Thread thread3 : HTML soup : getting HTML.body.other.$BC730E24");
-                log("Thread thread3 : HTML soup : getting HTML.body.other.$BD70DD25");
-                log("Thread thread3 : HTML soup : getting HTML.body.other.$0036C0AF");
-            }
-        }, "thread3");
-
-        thread1.start(); // crappy
-        thread2.start(); // fake
-        thread3.start(); // logs
+        // CrappyFakeLogger.main(null);
 
         log("");
         log("Initilizing frame");
 
-        int siz = 24;
+        ///////////////////////////////////////// threadings////////////////////////////////////
 
-        Thread passiveThread = new Thread(new Runnable() {
-            public void run() {
-                while (true) {
-                    log("passive thread run");
-                    temperature += deltaT > 0 ? 1 : -1;
-                    try {
-                        Thread.sleep((3000 + globalRandom.nextInt(1000)) / (deltaT * deltaT + 1)
-                                * (Math.abs(temperature) + 1));
-                    } catch (Exception e) {
-                    }
-
-                    if ((temperature > 100) || (temperature < -273))
-                        System.exit(0);
-                }
-            }
-        }, "passive thread");
+        Thread passiveThread = new Thread(new passiveThread(), "passive thread");
+        Thread weatherThread = new Thread(new weatherThread(), "weather thread");
+        Thread clockThread = new Thread(new clockThread(), "clock thread");
+        Thread pmThread = new Thread(new pmThread(), "pm thread");
 
         passiveThread.start();
+        weatherThread.start();
+        clockThread.start();
+        pmThread.start();
 
         /////////////////////////////////////////// weather/////////////////////////////////////
-
-        Thread weatherThread = new Thread(new Runnable() {
-            public void run() {
-                while (true) {
-                    try {
-
-                        switch (weatherType) {
-                            case 0:
-                                weatherIcon.setIcon(sunny);
-                                weather.setText(String.format("%s %d℃", "sunny", temperature));
-                                break;
-
-                            case 1:
-                                weatherIcon.setIcon(cloudy);
-                                weather.setText(String.format("%s %d℃", "cloudy", temperature));
-                                Thread.sleep(3000 + globalRandom.nextInt(2000));
-
-                            case 2:
-                                if (temperature > 0) {
-                                    weatherIcon.setIcon(rainy);
-                                    weather.setText(String.format("%s %d℃", "rainy", temperature));
-                                } else {
-                                    weatherIcon.setIcon(snowy);
-                                    weather.setText(String.format("%s %d℃", "snowy", temperature));
-                                }
-                                Thread.sleep(5000 + globalRandom.nextInt(5000));
-                                break;
-
-                            default:
-                                weatherIcon.setIcon(sunny);
-                                weather.setText(String.format("%s %d℃", "sunny", temperature));
-                                break;
-                        }
-
-                        Thread.sleep(1000 + globalRandom.nextInt(500));
-                        weatherType = globalRandom.nextInt(25);
-                    } catch (Exception e) {
-                    }
-                }
-            }
-        }, "weather thread");
 
         weaTitle.setEditable(false);
         weaTitle.setBounds(0, 15 * siz + 16, 450, siz);
@@ -355,26 +171,7 @@ public class Main {
         weather.setForeground(new Color(192, 255, 255));
         weather.setBorder(null);
 
-        weatherThread.start();
-
         /////////////////////////////////////////// clock///////////////////////////////////////
-
-        Thread clockThread = new Thread(new Runnable() {
-
-            private LocalDateTime n;
-
-            public void run() {
-                while (true) {
-                    n = LocalDateTime.now();
-                    bigClock.setText(String.format("%02d:%02d:%02d", n.getHour(), n.getMinute(), n.getSecond()));
-                    try {
-                        Thread.sleep(1000);
-                    } catch (Exception e) {
-                    }
-                }
-            }
-
-        }, "clock thread");
 
         cloTitle.setEditable(false);
         cloTitle.setBounds(0, 11 * siz + 6, 450, siz);
@@ -393,8 +190,6 @@ public class Main {
         bigClock.setBackground(Color.BLACK);
         bigClock.setForeground(new Color(192, 255, 255));
         bigClock.setBorder(null);
-
-        clockThread.start();
 
         ///////////////////////////////////////// calender//////////////////////////////////////
 
@@ -416,32 +211,26 @@ public class Main {
         calender.setForeground(new Color(192, 255, 255));
         calender.setBorder(null);
 
-        log(LocalDateTime.now().getMonth().getValue());
-
         //////////////////////////////////////////// cmd////////////////////////////////////////
 
-        // cmdTitle init.
         cmdTitle.setEditable(false);
         cmdTitle.setBounds(450, 200, 1100, siz);
         cmdTitle.setFont(new Font("宋体", Font.PLAIN, siz));
-        /*
-         * cmdTitle.setForeground(new Color(192, 255, 255));
-         * cmdTitle.setBackground(Color.BLACK);
-         * cmdTitle.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 1, new Color(192,
-         * 255, 255)));
-         */
         cmdTitle.setBackground(new Color(192, 255, 255));
         cmdTitle.setForeground(Color.BLACK);
         cmdTitle.setBorder(null);
 
-        // outArea init.
+        cmdPanel.setOpaque(true);
+        cmdPanel.setBounds(450, 200, 1100, 600);
+        cmdPanel.setBorder(BorderFactory.createMatteBorder(0, 1, 1, 1, new Color(192, 255, 255)));
+        cmdPanel.setBackground(Color.BLACK);
+
         outArea.setEditable(false);
         outArea.setBounds(50, 50, 1000, 500 - siz);
         outArea.setFont(new Font("宋体", Font.PLAIN, siz));
         outArea.setForeground(new Color(192, 255, 255));
         outArea.setBackground(Color.BLACK);
 
-        // point init.
         point.setEditable(false);
         point.setBounds(50, 550 - siz, 3 * siz, siz);
         point.setFont(new Font("宋体", Font.PLAIN, siz));
@@ -449,76 +238,75 @@ public class Main {
         point.setBackground(Color.BLACK);
         point.setBorder(null);
 
-        // cmdArea init.
         cmdArea.setBounds(50 + 3 * siz, 550 - siz, 500 - 3 * siz, siz);
         cmdArea.setFont(new Font("宋体", Font.PLAIN, siz));
         cmdArea.setForeground(new Color(192, 255, 255));
         cmdArea.setBackground(Color.BLACK);
         cmdArea.setBorder(null);
-        cmdArea.addKeyListener(new KeyListener() {
-            public void keyPressed(KeyEvent k) {
-                if (k.getKeyChar() == '\n') {
-                    outArea.setText(command(cmdArea.getText()) + '\n');
-                    pressedKey = '\0';
-                    cmdArea.setText(null);
-                }
-            }
-
-            public void keyTyped(KeyEvent k) {
-            }
-
-            public void keyReleased(KeyEvent k) {
-            }
-        });
+        cmdArea.addKeyListener(new cmdKeyListener());
 
         ////////////////////////////////////////// over////////////////////////////////////
 
-        overHeat.setEditable(false);
-        overHeat.setBounds(0, 453, 95 * overHeat.getText().length(), 95);
-        overHeat.setFont(new Font("宋体", Font.PLAIN, 95));
-        overHeat.setBackground(null);
-        overHeat.setBorder(null);
-        overHeat.setVisible(true);
+        over.setEditable(false);
+        over.setBounds(0, 453, 95 * over.getText().length(), 95);
+        over.setFont(new Font("宋体", Font.PLAIN, 95));
+        over.setBackground(null);
+        over.setBorder(null);
+        over.setVisible(true);
 
-        overHeatWindow.setVisible(true);
-        overHeatWindow.setAlwaysOnTop(true);
+        overWindow.setVisible(true);
+        overWindow.setAlwaysOnTop(true);
 
-        Thread overHeatThread = new Thread(new Runnable() {
-            public void run() {
-                test.start();
-                test.pause();
-                while (true) {
-                    if (temperature >= 40) {
-                        overHeat.setForeground(Color.RED);
-                        overHeat.setText("////////!///////Over Heat///////!////////");
-                        overHeatWindow.setVisible(true);
-                        if (!(test.isPlay)) {
-                            test.recommence();
-                        }
-                    } else if (temperature <= -20) {
-                        overHeat.setForeground(Color.BLUE);
-                        overHeat.setText("///////!///////Over Cooled///////!///////");
-                        overHeatWindow.setVisible(true);
-                        if (!(test.isPlay)) {
-                            test.recommence();
-                        }
-                    } else {
-                        overHeatWindow.setVisible(false);
-                        if (test.isPlay) {
-                            test.pause();
-                        }
-                    }
+        Thread overThread = new Thread(new overThread(), "over thread");
+        overThread.start();
 
-                    try {
-                        Thread.sleep(200);
-                    } catch (Exception e) {
-                    }
-                }
-            }
-        }, "overheat thread");
-        overHeatThread.start();
+        /////////////////////////////////////////// pm//////////////////////////////////////
 
-        ////////////////////////////////////////////////////////////////////////////////////////
+        pmTitle.setEditable(false);
+        pmTitle.setBounds(1550, 0, 450, siz);
+        pmTitle.setFont(new Font("宋体", Font.PLAIN, siz));
+        pmTitle.setBackground(new Color(192, 255, 255));
+        pmTitle.setForeground(Color.BLACK);
+        pmTitle.setBorder(null);
+
+        pmPanel.setBounds(1550, siz, 450, 200 - siz);
+        pmPanel.setBackground(Color.BLACK);
+        pmPanel.setForeground(new Color(192, 255, 255));
+        pmPanel.setBorder(BorderFactory.createMatteBorder(0, 1, 1, 1, new Color(192, 255, 255)));
+
+        pm.setEditable(false);
+        pm.setBounds(
+                225 - pm.getText().length() * 3 * siz / 4,
+                (100 - siz / 2) - 3 * siz / 2,
+                pm.getText().length() * 3 * siz,
+                3 * siz);
+        pm.setFont(new Font("宋体", Font.PLAIN, 3 * siz));
+        pm.setBackground(Color.BLACK);
+        pm.setForeground(new Color(192, 255, 255));
+        pm.setBorder(null);
+
+        /////////////////////////////////////////// id//////////////////////////////////////
+
+        idTitle.setEditable(false);
+        idTitle.setBounds(1550, 200, 450, siz);
+        idTitle.setFont(new Font("宋体", Font.PLAIN, siz));
+        idTitle.setBackground(new Color(192, 255, 255));
+        idTitle.setForeground(Color.BLACK);
+        idTitle.setBorder(null);
+
+        idPanel.setBounds(1550, 200 + siz, 450, 749 - siz);
+        idPanel.setBackground(Color.BLACK);
+        idPanel.setForeground(new Color(192, 255, 255));
+        idPanel.setBorder(BorderFactory.createMatteBorder(0, 1, 1, 1, new Color(192, 255, 255)));
+
+        id.setEditable(false);
+        id.setBounds(5, 0, 440, 743 - siz);
+        id.setFont(new Font("宋体", Font.PLAIN, siz));
+        id.setBackground(Color.BLACK);
+        id.setForeground(new Color(192, 255, 255));
+        id.setBorder(null);
+
+        ////////////////////////////////////////////////////////////////////////////////////
 
     }
 
@@ -551,7 +339,7 @@ public class Main {
 
                 // log(cmdTitle.getBackground());
 
-                return "";
+                return "abcdefghijklmnopqrstuvwxyz";
 
             } else if (com.equals("dataBs")) {
 
@@ -561,9 +349,9 @@ public class Main {
                     return "A character of Jacob Zhang`s GT:NH novel.";
                 } else if (txt.equals("Shirax21")) {
                     return "Shirax19`s brother.";
-                } else if (txt.equals("")) {
-                    return "";
-                } else if (txt.equals("")) {
+                } else if (txt.equals("Gigaware")) {
+                    return "A hardware/software/system company, nearly an omni software company.";
+                } else if (txt.equals("SMART CITY")) {
                     return "";
                 } else if (txt.equals("")) {
                     return "";
@@ -615,8 +403,56 @@ public class Main {
 
             } else if (com.equals("cmd")) {
 
-                return "SMART CITY Terminal [v0.2.2]\n" +
-                        "© Gigaware Co.,Ltd. all rights reserved.";
+                return String.format("SMART CITY Terminal [v%s]\n" +
+                        "© Gigaware Co.,Ltd. all rights reserved.", __version__);
+            } else if (com.equals("clean")) {
+
+                deltaP = Integer.parseInt(txt);
+
+                return String.format("SMART CITY™ city air cleaner %s: %.2f%c",
+                        (deltaP > 2) ? ("(Overclocked) ") : (""),
+                        50 * deltaP, '%');
+
+            } else if (com.equals("song")) {
+
+                if (txt.equals("0")) {
+                    bgmAudio.stop();
+                    return "BGM stopped";
+                } else if (txt.equals("1")) {
+                    bgmAudio = new AudioPlay(Paths.get(assetPath.toString(), "song", "1.wav").toString());
+                    bgmAudio.start();
+                    return "Now playing";
+                } else if (txt.equals("2")) {
+                    bgmAudio = new AudioPlay(Paths.get(assetPath.toString(), "song", "2.wav").toString());
+                    bgmAudio.start();
+                    return "Now playing";
+                } else if (txt.equals("3")) {
+                    bgmAudio = new AudioPlay(Paths.get(assetPath.toString(), "song", "3.wav").toString());
+                    bgmAudio.start();
+                    return "Now playing";
+                } else if (txt.equals("4")) {
+                    bgmAudio = new AudioPlay(Paths.get(assetPath.toString(), "song", "4.wav").toString());
+                    bgmAudio.start();
+                    return "Now playing";
+                } else if (txt.equals("5")) {
+                    bgmAudio = new AudioPlay(Paths.get(assetPath.toString(), "song", "5.wav").toString());
+                    bgmAudio.start();
+                    return "Now playing";
+                } else if (txt.equals("6")) {
+                    bgmAudio = new AudioPlay(Paths.get(assetPath.toString(), "song", "6.wav").toString());
+                    bgmAudio.start();
+                    return "Now playing";
+                } else if (txt.equals("7")) {
+                    bgmAudio = new AudioPlay(Paths.get(assetPath.toString(), "song", "7.wav").toString());
+                    bgmAudio.start();
+                    return "Now playing";
+                } else if (txt.equals("8")) {
+                    bgmAudio = new AudioPlay(Paths.get(assetPath.toString(), "song", "8.wav").toString());
+                    bgmAudio.start();
+                    return "Now playing";
+                } else {
+                    return "Unknown song, try song\\1~8";
+                }
 
             } else {
                 return String.format("Unknown command \"%s\"", com);
@@ -626,6 +462,67 @@ public class Main {
             return e.toString();
         }
 
+    }
+
+    // char转byte
+
+    public static byte[] getBytes(char[] chars) {
+        Charset cs = Charset.forName("UTF-8");
+        CharBuffer cb = CharBuffer.allocate(chars.length);
+        cb.put(chars);
+        cb.flip();
+        ByteBuffer bb = cs.encode(cb);
+
+        return bb.array();
+
+    }
+
+    public static void init() {
+        // init.
+
+        rootFrame.setVisible(true);
+        rootFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        rootFrame.setIconImage(icon.getImage());
+        rootFrame.setSize(2000, 1000);
+        rootFrame.setLayout(null);
+        rootFrame.setResizable(false);
+        rootFrame.getContentPane().setBackground(Color.BLACK);
+
+        rootFrame.add(cmdPanel);
+        rootFrame.add(cmdTitle);
+
+        rootFrame.add(calTitle);
+        rootFrame.add(calPanel);
+        calPanel.add(calender);
+
+        rootFrame.add(cloTitle);
+        rootFrame.add(cloPanel);
+        cloPanel.add(bigClock);
+
+        rootFrame.add(weaTitle);
+        rootFrame.add(weaPanel);
+        weaPanel.add(weather);
+        weaPanel.add(weatherIcon);
+
+        overWindow.setBounds(500, 0, 2000, 95);
+        overWindow.setOpacity(0.5F);
+        overWindow.add(over);
+
+        rootFrame.add(pmTitle);
+        rootFrame.add(pmPanel);
+        pmPanel.add(pm);
+
+        cmdPanel.add(outArea);
+        cmdPanel.add(point);
+        cmdPanel.add(cmdArea);
+
+        rootFrame.add(idTitle);
+        rootFrame.add(idPanel);
+        idPanel.add(id);
+
+        jokeFrame.setSize(490, 260);
+        jokeFrame.setLayout(null);
+        jokeFrame.setLocationRelativeTo(null);
     }
 
 }

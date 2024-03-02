@@ -18,10 +18,7 @@ public class AudioPlay {
     // 控制器
     private Clip bgm;
     // 在暂停和继续音乐时保存文件的毫秒数
-    private Long microsecondPosition;
-
-    private AudioPlay() {
-    };
+    private Long microsecondPosition = new Long(0);
 
     public boolean isPlay = false;
 
