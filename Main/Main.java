@@ -5,6 +5,7 @@ import javax.swing.*;
 import Main.swingTweak.JCalender;
 
 import java.awt.Color;
+import java.awt.FlowLayout;
 import java.awt.Font;
 
 import java.nio.ByteBuffer;
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 import java.util.Random;
 
 /*
- * TODO : News(up) & 特效(down) & database
+ * TODO : 特效(down) & database
  */
 
 public class Main {
@@ -25,7 +26,7 @@ public class Main {
     public static Path assetPath = Paths.get(gamePath.toString(), "asset");
     public static Path deathLogPath = Paths.get(gamePath.toString(), "deathLog");
 
-    public static final String __version__ = "0.2.4";
+    public static final String __version__ = "0.2.5";
     public static final int siz = 24;
     public static final double INDUSTRY = 1;
     public static final int SUNNY = 0;
@@ -94,7 +95,7 @@ public class Main {
     public static JTextField pm = new JTextField("114");
 
     public static JTextField idTitle = new JTextField("SMART CITY™ terminal id");
-    public static JPanel idPanel = new JPanel(null);
+    public static JPanel idPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
     public static JTextArea id = new JTextArea(
             String.format("Simulation create time :\n" +
                     "%s\n" +
@@ -122,6 +123,14 @@ public class Main {
                     "===================================\n" +
                     "Simulation ID : 13", LocalDateTime.now().toString(), __version__));
 
+    public static JTextField newsTitle = new JTextField("News");
+    public static JPanel newsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+    public static JTextArea news = new JTextArea();
+
+    public static JTextField effectTitle = new JTextField("Blah blah blah hahahhahhahahahahhahah XDXDXD ...");
+    public static JPanel effectPanel = new JPanel(null);
+    public static JTextArea effect = new JTextArea();
+
     // JComponents
 
     public static void main(String[] args) throws Exception {
@@ -141,11 +150,13 @@ public class Main {
         Thread weatherThread = new Thread(new weatherThread(), "weather thread");
         Thread clockThread = new Thread(new clockThread(), "clock thread");
         Thread pmThread = new Thread(new pmThread(), "pm thread");
+        Thread newsThread = new Thread(new newsThread(), "news thread");
 
         passiveThread.start();
         weatherThread.start();
         clockThread.start();
         pmThread.start();
+        newsThread.start();
 
         /////////////////////////////////////////// weather/////////////////////////////////////
 
@@ -220,8 +231,7 @@ public class Main {
         cmdTitle.setForeground(Color.BLACK);
         cmdTitle.setBorder(null);
 
-        cmdPanel.setOpaque(true);
-        cmdPanel.setBounds(450, 200, 1100, 600);
+        cmdPanel.setBounds(450, 200 + siz, 1100, 600 - siz);
         cmdPanel.setBorder(BorderFactory.createMatteBorder(0, 1, 1, 1, new Color(192, 255, 255)));
         cmdPanel.setBackground(Color.BLACK);
 
@@ -306,12 +316,49 @@ public class Main {
         id.setForeground(new Color(192, 255, 255));
         id.setBorder(null);
 
+        ////////////////////////////////////////// news/////////////////////////////////////
+
+        newsTitle.setEditable(false);
+        newsTitle.setBounds(450, 0, 1100, siz);
+        newsTitle.setFont(new Font("宋体", Font.PLAIN, siz));
+        newsTitle.setBackground(new Color(192, 255, 255));
+        newsTitle.setForeground(Color.BLACK);
+        newsTitle.setBorder(null);
+
+        newsPanel.setBounds(450, siz, 1100, 200 - siz);
+        newsPanel.setBackground(Color.BLACK);
+        newsPanel.setForeground(new Color(192, 255, 255));
+        newsPanel.setBorder(BorderFactory.createMatteBorder(0, 1, 1, 1, new Color(192, 255, 255)));
+
+        news.setEditable(false);
+        news.setFont(new Font("宋体", Font.ITALIC, siz));
+        news.setBackground(Color.BLACK);
+        news.setForeground(new Color(192, 255, 255));
+        news.setBorder(null);
+
+        ///////////////////////////////////////// effect////////////////////////////////////
+
+        effectTitle.setEditable(false);
+        effectTitle.setBounds(450, 0, 1100, siz);
+        effectTitle.setFont(new Font("宋体", Font.PLAIN, siz));
+        effectTitle.setBackground(new Color(192, 255, 255));
+        effectTitle.setForeground(Color.BLACK);
+        effectTitle.setBorder(null);
+
+        effectPanel.setBounds(450, siz, 1100, 200 - siz);
+        effectPanel.setBackground(Color.BLACK);
+        effectPanel.setForeground(new Color(192, 255, 255));
+        effectPanel.setBorder(BorderFactory.createMatteBorder(0, 1, 1, 1, new Color(192, 255, 255)));
+
+        effect.setEditable(false);
+        effect.setBounds(null);
+        effect.setFont(new Font("宋体", Font.ITALIC, siz));
+        effect.setBackground(Color.BLACK);
+        effect.setForeground(new Color(192, 255, 255));
+        effect.setBorder(null);
+
         ////////////////////////////////////////////////////////////////////////////////////
 
-    }
-
-    public static void log(Object txt) {
-        System.out.println(String.format("[%s] %s", LocalDateTime.now().toString(), txt.toString()));
     }
 
     public static String command(String cmd) {
@@ -415,8 +462,11 @@ public class Main {
 
             } else if (com.equals("song")) {
 
-                if (txt.equals("0")) {
+                if (bgmAudio != null) {
                     bgmAudio.stop();
+                }
+
+                if (txt.equals("0")) {
                     return "BGM stopped";
                 } else if (txt.equals("1")) {
                     bgmAudio = new AudioPlay(Paths.get(assetPath.toString(), "song", "1.wav").toString());
@@ -451,7 +501,8 @@ public class Main {
                     bgmAudio.start();
                     return "Now playing";
                 } else {
-                    return "Unknown song, try song\\1~8";
+                    bgmAudio = new AudioPlay(Paths.get(assetPath.toString(), txt + ".wav").toString());
+                    return "Now playing " + txt + ".wav";
                 }
 
             } else {
@@ -488,8 +539,11 @@ public class Main {
         rootFrame.setResizable(false);
         rootFrame.getContentPane().setBackground(Color.BLACK);
 
-        rootFrame.add(cmdPanel);
         rootFrame.add(cmdTitle);
+        rootFrame.add(cmdPanel);
+        cmdPanel.add(outArea);
+        cmdPanel.add(point);
+        cmdPanel.add(cmdArea);
 
         rootFrame.add(calTitle);
         rootFrame.add(calPanel);
@@ -512,17 +566,21 @@ public class Main {
         rootFrame.add(pmPanel);
         pmPanel.add(pm);
 
-        cmdPanel.add(outArea);
-        cmdPanel.add(point);
-        cmdPanel.add(cmdArea);
-
         rootFrame.add(idTitle);
         rootFrame.add(idPanel);
         idPanel.add(id);
 
+        rootFrame.add(newsTitle);
+        rootFrame.add(newsPanel);
+        newsPanel.add(news);
+
         jokeFrame.setSize(490, 260);
         jokeFrame.setLayout(null);
         jokeFrame.setLocationRelativeTo(null);
+    }
+
+    public static void log(Object txt) {
+        System.out.println(String.format("[%s] %s", LocalDateTime.now().toString(), txt.toString()));
     }
 
 }
