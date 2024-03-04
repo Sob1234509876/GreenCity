@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 import java.util.Random;
 
 /*
- * TODO : 特效(down) & database
+ * TODO : database
  */
 
 public class Main {
@@ -26,9 +26,9 @@ public class Main {
     public static Path assetPath = Paths.get(gamePath.toString(), "asset");
     public static Path deathLogPath = Paths.get(gamePath.toString(), "deathLog");
 
-    public static final String __version__ = "0.2.5";
+    public static final String __version__ = "1.0";
     public static final int siz = 24;
-    public static final double INDUSTRY = 1;
+    public static final double INDUSTRY = 50;
     public static final int SUNNY = 0;
     public static final int CLOUDY = 1;
     public static final int WET = 2;
@@ -95,7 +95,7 @@ public class Main {
     public static JTextField pm = new JTextField("114");
 
     public static JTextField idTitle = new JTextField("SMART CITY™ terminal id");
-    public static JPanel idPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+    public static JPanel idPanel = new JPanel(null);
     public static JTextArea id = new JTextArea(
             String.format("Simulation create time :\n" +
                     "%s\n" +
@@ -151,12 +151,14 @@ public class Main {
         Thread clockThread = new Thread(new clockThread(), "clock thread");
         Thread pmThread = new Thread(new pmThread(), "pm thread");
         Thread newsThread = new Thread(new newsThread(), "news thread");
+        Thread effectThread = new Thread(new effectThread(), "effect thread");
 
         passiveThread.start();
         weatherThread.start();
         clockThread.start();
         pmThread.start();
         newsThread.start();
+        effectThread.start();
 
         /////////////////////////////////////////// weather/////////////////////////////////////
 
@@ -339,20 +341,20 @@ public class Main {
         ///////////////////////////////////////// effect////////////////////////////////////
 
         effectTitle.setEditable(false);
-        effectTitle.setBounds(450, 0, 1100, siz);
+        effectTitle.setBounds(450, 800, 1100, siz);
         effectTitle.setFont(new Font("宋体", Font.PLAIN, siz));
         effectTitle.setBackground(new Color(192, 255, 255));
         effectTitle.setForeground(Color.BLACK);
         effectTitle.setBorder(null);
 
-        effectPanel.setBounds(450, siz, 1100, 200 - siz);
+        effectPanel.setBounds(450, 800 + siz, 1100, 149 - siz);
         effectPanel.setBackground(Color.BLACK);
         effectPanel.setForeground(new Color(192, 255, 255));
         effectPanel.setBorder(BorderFactory.createMatteBorder(0, 1, 1, 1, new Color(192, 255, 255)));
 
         effect.setEditable(false);
-        effect.setBounds(null);
-        effect.setFont(new Font("宋体", Font.ITALIC, siz));
+        effect.setBounds(0, 0, 1100, 148 - siz);
+        effect.setFont(new Font("宋体", Font.BOLD, siz));
         effect.setBackground(Color.BLACK);
         effect.setForeground(new Color(192, 255, 255));
         effect.setBorder(null);
@@ -573,6 +575,10 @@ public class Main {
         rootFrame.add(newsTitle);
         rootFrame.add(newsPanel);
         newsPanel.add(news);
+
+        rootFrame.add(effectTitle);
+        rootFrame.add(effectPanel);
+        effectPanel.add(effect);
 
         jokeFrame.setSize(490, 260);
         jokeFrame.setLayout(null);
